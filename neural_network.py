@@ -8,6 +8,25 @@ import math
 import random
 import string
 import sys
+import json
+import datetime
+import argparse
+
+parser = argparse.ArgumentParser(description='Train neural network.')
+parser.add_argument('-s', action="store_true",
+                    help='save neural network to file.')
+parser.add_argument('--no-test', action="store_true", default=False,
+                    help='test and show results.')
+parser.add_argument('-l', action="store", nargs=1, type=str,
+                    help='load neural network from file.')
+parser.add_argument('samples', action="store", nargs="?", type=str,
+                    help='load neural network from file.')
+args = parser.parse_args()
+
+def nowAsString():
+    retval = "{:%y%m%d%H%M%S}".format(datetime.datetime.today())
+    retval += ".nn.json" #Filename extension
+    return retval
 
 random.seed(0)
 
@@ -149,11 +168,40 @@ class NN:
             if i % 100 == 0:
                 print('error %-.5f' % error)
 
-    def save(self, filename):
-        pass
+    def save(self):
+        with open(nowAsString(), "w") as text_file:
+            text_file.write(json.dumps({
+                'wo': self.wo,
+                'wi': self.wi
+            }, indent=2))
 
-    def load(self, filename):
-        pass
+    @staticmethod
+    def load(filename):
+        content = "";
+        with open(filename, 'r') as content_file:
+            content = content_file.read()
+        source = json.loads(content)
+
+        self = NN(0, 0, 0);
+
+        # number of input, hidden, and output nodes
+        self.ni = len(source["wi"])
+        self.nh = len(source["wo"])
+        self.no = len(source["wo"][0])
+
+        # activations for nodes
+        self.ai = [1.0]*self.ni
+        self.ah = [1.0]*self.nh
+        self.ao = [1.0]*self.no
+
+        # create weights
+        self.wi = source["wi"]
+        self.wo = source["wo"]
+
+        # last change in weights for momentum
+        self.ci = makeMatrix(self.ni, self.nh)
+        self.co = makeMatrix(self.nh, self.no)
+        return self
 
 class player:
     def __init__(self):
@@ -189,18 +237,32 @@ class player:
         return bestOption
 
 def demo():
-    # Teach network XOR function
-    content = "";
-    with open(sys.argv[1], 'r') as content_file:
-        content = content_file.read()
-    pat = eval(content)
-
-    # create a network with two input, two hidden, and one output nodes
-    n = NN(43, 10, 7)
-    # train it with some patterns
-    n.train(pat)
-    # test it
-    n.test(pat)
+    # Train (default) or load
+    if args.l != None:
+        if args.no_test or args.samples == None:
+            print "Not doing anything. When loading neural network, provide a samples file to test against."
+            sys.exit();
+        nn = NN.load(args.l[0])
+        content = "";
+        with open(args.samples, 'r') as content_file:
+            content = content_file.read()
+        pat = eval(content)
+        nn.test(pat)
+    elif args.samples != None:
+        nn = NN(43, 10, 7)
+        content = "";
+        with open(args.samples, 'r') as content_file:
+            content = content_file.read()
+        pat = eval(content)
+        nn.train(pat)
+        if not args.no_test:
+            nn.test(pat)
+        if args.s:
+            nn.save()
+    else:
+        print "Must train or load neural network..."
+        parser.print_help()
+        sys.exit()
 
 if __name__ == '__main__':
     demo()
