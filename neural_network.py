@@ -12,23 +12,13 @@ import json
 import datetime
 import argparse
 
-parser = argparse.ArgumentParser(description='Train neural network.')
-parser.add_argument('-s', action="store_true",
-                    help='save neural network to file.')
-parser.add_argument('--no-test', action="store_true", default=False,
-                    help='test and show results.')
-parser.add_argument('-l', action="store", nargs=1, type=str,
-                    help='load neural network from file.')
-parser.add_argument('samples', action="store", nargs="?", type=str,
-                    help='load neural network from file.')
-args = parser.parse_args()
-
 def nowAsString():
     retval = "{:%y%m%d%H%M%S}".format(datetime.datetime.today())
     retval += ".nn.json" #Filename extension
     return retval
 
 random.seed(0)
+scripting = False
 
 # calculate a random number where:  a <= rand < b
 def rand(a, b):
@@ -144,20 +134,22 @@ class NN:
 
     def test(self, patterns):
         for p in patterns:
-            print(p[0], '->', self.update(p[0]))
+            print((p[0], '->', self.update(p[0])))
 
     def weights(self):
         print('Input weights:')
         for i in range(self.ni):
-            print(self.wi[i])
+            print((self.wi[i]))
         print()
         print('Output weights:')
         for j in range(self.nh):
-            print(self.wo[j])
+            print((self.wo[j]))
 
-    def train(self, patterns, iterations=1000, N=0.001, M=0.001):
+    def train(self, patterns, iterations, N):
+        global scripting
         # N: learning rate
         # M: momentum factor
+        M = N/5
         for i in range(iterations):
             error = 0.0
             for p in patterns:
@@ -165,15 +157,22 @@ class NN:
                 targets = p[1]
                 self.update(inputs)
                 error = error + self.backPropagate(targets, N, M)
-            if i % 100 == 0:
-                print('error %-.5f' % error)
+            if i % (iterations/10) == 0:
+                if not scripting:
+                    print(('error %-.5f' % error))
+        if not scripting:
+            print(('error %-.5f' % error))
 
     def save(self):
-        with open(nowAsString(), "w") as text_file:
+        global scripting
+        filename = nowAsString()
+        with open(filename, "w") as text_file:
             text_file.write(json.dumps({
                 'wo': self.wo,
                 'wi': self.wi
             }, indent=2))
+        if scripting:
+            print(filename)
 
     @staticmethod
     def load(filename):
@@ -203,66 +202,51 @@ class NN:
         self.co = makeMatrix(self.nh, self.no)
         return self
 
-class player:
-    def __init__(self):
-        content = "";
-        with open('samples', 'r') as content_file:
-            content = content_file.read()
-        pat = eval(content);
-        print pat
-        # create a network with two input, two hidden, and one output nodes
-        self.mynet = NN(43, 10, 7)
-        # train it with some patterns
-        self.mynet.train(pat)
+class Player:
+    def __init__(self, filename):
+        self.mynet = NN.load(filename)
 
     def play(self, turn, board):
-        width=7
-        height=6
-        myboard=[]
-        for x in range(height-1,-1, -1):
-            for y in range(0,width):
-                myboard.append(board[y][x])
+        width = len(board[0])
+        height = len(board)
+        nnInput = []
+        for row in range(height - 1, -1, -1):
+            for col in range(0, width):
+                nnInput.append(board[row][col])
 
-        myboard.append(turn)
+        nnInput.append(turn)
 
-        move=[]
-        move.append(myboard)
-        move.append([0,0,0,0,0,0,0])
-
-        outputActivations = self.mynet.update(move)
+        outputActivations = self.mynet.update(nnInput)
         bestOption = outputActivations.index(max(outputActivations))
-        while myboard[bestOption] != 0:
+        while board[height - 1][bestOption] != 0:
             outputActivations[bestOption] = -1
             bestOption = outputActivations.index(max(outputActivations))
         return bestOption
 
 def demo():
-    # Train (default) or load
+    global scripting
+    parser = argparse.ArgumentParser(description='Train neural network.')
+    #parser.add_argument('-s', action="store_true", help='save neural network to file.')
+    parser.add_argument('--scripting', action="store_true", default=False, help='Use for scripting purposes; replace stdout output with filename holding the resulting nn.')
+    parser.add_argument('-l', action="store", nargs=1, type=str, metavar="file", help='Train an existing neural network defined in file.')
+    parser.add_argument('-r', action="store", nargs=1, type=float, metavar="rate", help='Learning rate. [default: 0.000001]', default=[0.000001])
+    parser.add_argument('-i', action="store", nargs=1, type=int, metavar="iterate", help='Number of iterations for each sample. [default: 100]', default=[100])
+    parser.add_argument('samples', action="store", nargs=1, type=str, help='Samples for training.')
+    args = parser.parse_args()
+    scripting = args.scripting
+    content = ""
+    with open(args.samples[0], 'r') as content_file:
+        content = content_file.read()
+    samples = eval(content)
+    nn = {}
     if args.l != None:
-        if args.no_test or args.samples == None:
-            print "Not doing anything. When loading neural network, provide a samples file to test against."
-            sys.exit();
-        nn = NN.load(args.l[0])
         content = "";
-        with open(args.samples, 'r') as content_file:
-            content = content_file.read()
-        pat = eval(content)
-        nn.test(pat)
-    elif args.samples != None:
+        nn = NN.load(args.l[0])
+    else:
         nn = NN(43, 10, 7)
         content = "";
-        with open(args.samples, 'r') as content_file:
-            content = content_file.read()
-        pat = eval(content)
-        nn.train(pat)
-        if not args.no_test:
-            nn.test(pat)
-        if args.s:
-            nn.save()
-    else:
-        print "Must train or load neural network..."
-        parser.print_help()
-        sys.exit()
+    nn.train(samples, args.i[0], args.r[0])
+    nn.save()
 
 if __name__ == '__main__':
     demo()
