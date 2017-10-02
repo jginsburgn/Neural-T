@@ -92,55 +92,55 @@ def checkAnyT(player_number):
 
 def checkWinBelow(row, col, player_number):
     global board, width, height
-    if (col + 1 == width or row == 0 or row + 1 == width): return False
-    if (board[row - 1][col + 1] == player_number and board[row][col + 1] == player_number and board[row + 1][
+    if (col + 1 == width or col == 0 or row + 1 == height): return False
+    if (board[row + 1][col - 1] == board[row + 1][col] == board[row + 1][
             col + 1] == player_number): return True
     return False
 
 
 def checkWinAbove(row, col, player_number):
     global board, width, height
-    if (col == 0 or row == 0 or row + 1 == height): return False
-    if (board[row - 1][col - 1] == player_number and board[row][col - 1] == player_number and board[row + 1][
-            col - 1] == player_number): return True
+    if (col == 0 or row == 0 or col + 1 == width): return False
+    if (board[row - 1][col - 1] == board[row - 1][col] == board[row - 1][
+            col + 1] == player_number): return True
     return False
 
 
 def checkLeft(row, col, player_number):
     global board, width, height
-    if (row + 1 >= height or col + 1 >= width or col - 1 < 0): return False
-    if (board[row + 1][col - 1] == board[row + 1][col] == board[row + 1][col + 1] == player_number): return True
+    if (row + 1 >= height or col + 1 >= width or row - 1 < 0): return False
+    if (board[row - 1][col + 1] == board[row][col + 1] == board[row + 1][col + 1] == player_number): return True
     return False
 
 
 def checkRight(row, col, player_number):
     global board, width, height
-    if (row - 1 < 0 or col + 1 >= width or col - 1 < 0): return False
-    if (board[row - 1][col - 1] == board[row - 1][col] == board[row - 1][col + 1] == player_number): return True
+    if (col == 0 or row == 0 or row + 1 == height): return False
+    if (board[row - 1][col - 1] == board[row][col - 1] == board[row + 1][col - 1] == player_number): return True
     return False
 
 
 def checkWinBottomRight(row, col, player_number):
     global board, width, height
-    if (row - 2 < 0 or col + 2 >= width): return False
-    if (board[row - 2][col] == player_number and board[row - 1][col + 1] == player_number and board[row][
-            col + 2] == player_number): return True
+    if (row + 2 >= height or col - 2 < 0): return False
+    if (board[row][col -2] == player_number and board[row + 1][col - 1] == player_number and board[row + 2][
+            col] == player_number): return True
     return False
 
 
 def checkWinBottomLeft(row, col, player_number):
     global board, width, height
-    if (row + 2 >= height or col - 2 < 0): return False
-    if (board[row + 2][col] == player_number and board[row + 1][col - 1] == player_number and board[row][
-            col - 2] == player_number): return True
+    if (row + 2 >= height or col + 2 >= width): return False
+    if (board[row + 2][col] == player_number and board[row + 1][col + 1] == player_number and board[row][
+            col + 2] == player_number): return True
     return False
 
 
 def checkWinTopLeft(row, col, player_number):
     global board, width, height
-    if (row + 2 >= height or col - 2 < 0): return False
-    if (board[row + 2][col] == player_number and board[row + 1][col - 1] == player_number and board[row][
-            col - 2] == player_number): return True
+    if (row - 2 < 0 or col + 2 >= width): return False
+    if (board[row - 2][col] == player_number and board[row - 1][col + 1] == player_number and board[row][
+            col + 2] == player_number): return True
     return False
 
 
