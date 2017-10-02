@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# Second, and last, phase for producing training samples for the neural_network.py NNs.
 import sys
 import string
 
